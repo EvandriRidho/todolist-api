@@ -1,0 +1,16 @@
+{
+  "name": "todolist-api",
+  "version": "1.0.0",
+  "description": "todolist api",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "api",
+    "nodejs",
+    "express"
+  ],
+  "author": "Evandri Ridho Hasmono",
+  "license": "MIT"
+}
