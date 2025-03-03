@@ -3,7 +3,7 @@ const { randomUUID } = require('node:crypto')
 
 const server = createServer()
 
-const Tasks = [
+let Tasks = [
     {
         id: randomUUID(),
         title: 'Task A',
@@ -67,10 +67,56 @@ server.on('request', (req, res) => {
                     })()
                     break
                 case 'DELETE':
-                    res.writeHead(501, { 'Content-Type': 'application/json' })
-                    res.write(STATUS_CODES[501])
-                    res.end()
+                    (() => {
+                        const chunks = []
+                        req.on('data', (chunk) => {
+                            chunks.push(chunk)
+                        })
+                        req.on('error', (err) => {
+                            console.log('error : ', err)
+                        })
+                        req.on('end', () => {
+                            const jsonRaw = Buffer.concat(chunks).toString()
+                            const { id } = JSON.parse(jsonRaw)
+
+                            if (!id) {
+                                const badRequest = JSON.stringify({
+                                    status: STATUS_CODES[400],
+                                    message: "id is required"
+                                })
+                                res.writeHead(400, { 'Content-Type': 'application/json' })
+                                res.write(badRequest)
+                                res.end()
+                                return
+                            }
+
+                            const taskIndex = Tasks.findIndex((task) => task.id === id)
+
+                            if (taskIndex < 0) {
+                                const notFound = JSON.stringify({
+                                    status: STATUS_CODES[404],
+                                    message: "Task not found"
+                                })
+                                res.writeHead(404, { 'Content-Type': 'application/json' })
+                                res.write(notFound)
+                                res.end()
+                                return
+                            }
+
+                            // Simpan task sebelum dihapus
+                            const deletedTask = Tasks[taskIndex]
+
+                            // Hapus task dari array
+                            Tasks.splice(taskIndex, 1)
+
+                            const responseJson = JSON.stringify(deletedTask)
+                            res.writeHead(200, { 'Content-Type': 'application/json' })
+                            res.write(responseJson)
+                            res.end()
+                        })
+                    })()
                     break
+
                 case 'PUT':
                     (() => {
                         const chunks = []
