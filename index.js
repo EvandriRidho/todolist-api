@@ -33,36 +33,38 @@ server.on('request', (req, res) => {
                     res.end()
                     break
                 case 'POST':
-                    const chunks = []
-                    req.on('data', (chunk) => {
-                        chunks.push(chunk)
-                    })
-                    req.on('error', (error) => {
-                        console.log('Server Error', error)
-                    })
-                    req.on('end', () => {
-                        const jsonRaw = Buffer.concat(chunks).toString()
-                        const { title } = JSON.parse(jsonRaw)
+                    (() => {
+                        const chunks = []
+                        req.on('data', (chunk) => {
+                            chunks.push(chunk)
+                        })
+                        req.on('error', (err) => {
+                            console.log('error : ', err)
+                        })
+                        req.on('end', () => {
+                            const jsonRaw = Buffer.concat(chunks).toString()
+                            const { title } = JSON.parse(jsonRaw)
 
-                        if (title === undefined || title < 3) {
-                            const badRequest = JSON.stringify({
-                                status: STATUS_CODES[400],
-                                message: "Title is required and must be grather than 3"
-                            })
-                            res.writeHead(400, { 'Content-Type': 'application/json', 'content-length': badRequest.length })
-                            res.write(badRequest)
+                            if (title === undefined || title < 3) {
+                                const badRequest = JSON.stringify({
+                                    status: STATUS_CODES[400],
+                                    message: "Title is required and must be grather than 3"
+                                })
+                                res.writeHead(400, { 'content-type': 'application/json', 'content-length': badRequest.length })
+                                res.write(badRequest)
+                                res.end()
+                                return
+                            }
+
+                            const newTask = { id: randomUUID(), title: title, status: "todo" }
+                            Tasks.push(newTask)
+
+                            const newTaskJson = JSON.stringify(newTask)
+                            res.writeHead(201, { 'content-type': 'application/json', 'content-length': newTaskJson.length })
+                            res.write(newTaskJson)
                             res.end()
-                            return
-                        }
-
-                        const newTask = { id: randomUUID(), title: title, status: "todo" }
-                        Tasks.push(newTask)
-
-                        const newTaskJson = JSON.stringify(newTask)
-                        res.writeHead(201, { 'Content-Type': 'application/json', 'content-length': newTaskJson.length })
-                        res.write(newTaskJson)
-                        res.end()
-                    })
+                        })
+                    })()
                     break
                 case 'DELETE':
                     res.writeHead(501, { 'Content-Type': 'application/json' })
@@ -70,9 +72,57 @@ server.on('request', (req, res) => {
                     res.end()
                     break
                 case 'PUT':
-                    res.writeHead(501, { 'Content-Type': 'application/json' })
-                    res.write(STATUS_CODES[501])
-                    res.end()
+                    (() => {
+                        const chunks = []
+                        req.on('data', (chunk) => {
+                            chunks.push(chunk)
+                        })
+                        req.on('error', (err) => {
+                            console.log('error : ', err)
+                        })
+                        req.on('end', () => {
+                            const jsonRaw = Buffer.concat(chunks).toString()
+                            const { id, status } = JSON.parse(jsonRaw)
+
+                            if (id === undefined) {
+                                const badRequest = JSON.stringify({
+                                    status: STATUS_CODES[400],
+                                    message: "id is required"
+                                })
+                                res.writeHead(400, { 'content-type': 'application/json', 'content-length': badRequest.length })
+                                res.write(badRequest)
+                                res.end()
+                                return
+                            }
+
+                            if (status === undefined) {
+                                const badRequest = JSON.stringify({
+                                    status: STATUS_CODES[400],
+                                    message: "status is required"
+                                })
+                                res.writeHead(400, { 'content-type': 'application/json', 'content-length': badRequest.length })
+                                res.write(badRequest)
+                                res.end()
+                                return
+                            }
+
+                            const index = Tasks.findIndex((task) => task.id === id)
+
+                            if (index < 0) {
+                                res.writeHead(400, { 'content-type': 'application/json', 'content-length': badRequest.length })
+                                res.write(badRequest)
+                                res.end()
+                                return
+                            }
+
+                            Tasks[index].status = status
+
+                            const newTaskJson = JSON.stringify(Tasks[index])
+                            res.writeHead(200, { 'content-type': 'application/json', 'content-length': newTaskJson.length })
+                            res.write(newTaskJson)
+                            res.end()
+                        })
+                    })()
                     break
                 default:
                     res.writeHead(405, { 'Content-Type': 'application/json' })
@@ -83,6 +133,7 @@ server.on('request', (req, res) => {
             break
         default:
             res.writeHead(404, { 'Content-Type': 'application/json' })
+            res.write()
             res.end()
             break
     }
