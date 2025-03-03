@@ -3,8 +3,7 @@ const { randomUUID } = require('node:crypto')
 
 const server = createServer()
 
-const jsonNotFound = JSON.stringify({})
-const task = [
+const Tasks = [
     {
         id: randomUUID(),
         title: 'Task A',
@@ -24,21 +23,46 @@ const task = [
 
 server.on('request', (req, res) => {
     const { method, url } = req
-    console.debug('Received request', method, url)
-
     switch (url) {
         case '/api/v1/tasks':
             switch (method) {
                 case 'GET':
-                    const jsonMessage = JSON.stringify(task)
+                    const jsonMessage = JSON.stringify(Tasks)
                     res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Length': jsonMessage.length })
                     res.write(jsonMessage)
                     res.end()
                     break
                 case 'POST':
-                    res.writeHead(501, { 'Content-Type': 'application/json' })
-                    res.write(STATUS_CODES[501])
-                    res.end()
+                    const chunks = []
+                    req.on('data', (chunk) => {
+                        chunks.push(chunk)
+                    })
+                    req.on('error', (error) => {
+                        console.log('Server Error', error)
+                    })
+                    req.on('end', () => {
+                        const jsonRaw = Buffer.concat(chunks).toString()
+                        const { title } = JSON.parse(jsonRaw)
+
+                        if (title === undefined || title < 3) {
+                            const badRequest = JSON.stringify({
+                                status: STATUS_CODES[400],
+                                message: "Title is required and must be grather than 3"
+                            })
+                            res.writeHead(400, { 'Content-Type': 'application/json', 'content-length': badRequest.length })
+                            res.write(badRequest)
+                            res.end()
+                            return
+                        }
+
+                        const newTask = { id: randomUUID(), title: title, status: "todo" }
+                        Tasks.push(newTask)
+
+                        const newTaskJson = JSON.stringify(newTask)
+                        res.writeHead(201, { 'Content-Type': 'application/json', 'content-length': newTaskJson.length })
+                        res.write(newTaskJson)
+                        res.end()
+                    })
                     break
                 case 'DELETE':
                     res.writeHead(501, { 'Content-Type': 'application/json' })
@@ -58,8 +82,8 @@ server.on('request', (req, res) => {
             }
             break
         default:
-            res.writeHead(404, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(jsonNotFound) })
-            res.end(jsonNotFound)
+            res.writeHead(404, { 'Content-Type': 'application/json' })
+            res.end()
             break
     }
 })
