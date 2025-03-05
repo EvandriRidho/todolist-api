@@ -1,25 +1,11 @@
 const { createServer, STATUS_CODES } = require('node:http')
-const { randomUUID } = require('node:crypto')
+const { TaskController } = require('./TaskController')
 
 const server = createServer()
 
-let Tasks = [
-    {
-        id: randomUUID(),
-        title: 'Task A',
-        status: 'todo',
-    },
-    {
-        id: randomUUID(),
-        title: 'Task B',
-        status: 'todo',
-    },
-    {
-        id: randomUUID(),
-        title: 'Task C',
-        status: 'todo',
-    },
-]
+
+const taskController = new TaskController()
+
 
 server.on('request', (req, res) => {
     const { method, url } = req
@@ -27,148 +13,16 @@ server.on('request', (req, res) => {
         case '/api/v1/tasks':
             switch (method) {
                 case 'GET':
-                    const jsonMessage = JSON.stringify(Tasks)
-                    res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Length': jsonMessage.length })
-                    res.write(jsonMessage)
-                    res.end()
+                    taskController.getTasks(req, res)
                     break
                 case 'POST':
-                    (() => {
-                        const chunks = []
-                        req.on('data', (chunk) => {
-                            chunks.push(chunk)
-                        })
-                        req.on('error', (err) => {
-                            console.log('error : ', err)
-                        })
-                        req.on('end', () => {
-                            const jsonRaw = Buffer.concat(chunks).toString()
-                            const { title } = JSON.parse(jsonRaw)
-
-                            if (title === undefined || title < 3) {
-                                const badRequest = JSON.stringify({
-                                    status: STATUS_CODES[400],
-                                    message: "Title is required and must be grather than 3"
-                                })
-                                res.writeHead(400, { 'content-type': 'application/json', 'content-length': badRequest.length })
-                                res.write(badRequest)
-                                res.end()
-                                return
-                            }
-
-                            const newTask = { id: randomUUID(), title: title, status: "todo" }
-                            Tasks.push(newTask)
-
-                            const newTaskJson = JSON.stringify(newTask)
-                            res.writeHead(201, { 'content-type': 'application/json', 'content-length': newTaskJson.length })
-                            res.write(newTaskJson)
-                            res.end()
-                        })
-                    })()
+                    taskController.createTask(req, res)
                     break
                 case 'DELETE':
-                    (() => {
-                        const chunks = []
-                        req.on('data', (chunk) => {
-                            chunks.push(chunk)
-                        })
-                        req.on('error', (err) => {
-                            console.log('error : ', err)
-                        })
-                        req.on('end', () => {
-                            const jsonRaw = Buffer.concat(chunks).toString()
-                            const { id } = JSON.parse(jsonRaw)
-
-                            if (!id) {
-                                const badRequest = JSON.stringify({
-                                    status: STATUS_CODES[400],
-                                    message: "id is required"
-                                })
-                                res.writeHead(400, { 'Content-Type': 'application/json' })
-                                res.write(badRequest)
-                                res.end()
-                                return
-                            }
-
-                            const taskIndex = Tasks.findIndex((task) => task.id === id)
-
-                            if (taskIndex < 0) {
-                                const notFound = JSON.stringify({
-                                    status: STATUS_CODES[404],
-                                    message: "Task not found"
-                                })
-                                res.writeHead(404, { 'Content-Type': 'application/json' })
-                                res.write(notFound)
-                                res.end()
-                                return
-                            }
-
-                            // Simpan task sebelum dihapus
-                            const deletedTask = Tasks[taskIndex]
-
-                            // Hapus task dari array
-                            Tasks.splice(taskIndex, 1)
-
-                            const responseJson = JSON.stringify(deletedTask)
-                            res.writeHead(200, { 'Content-Type': 'application/json' })
-                            res.write(responseJson)
-                            res.end()
-                        })
-                    })()
+                    taskController.deleteTask(req, res)
                     break
-
                 case 'PUT':
-                    (() => {
-                        const chunks = []
-                        req.on('data', (chunk) => {
-                            chunks.push(chunk)
-                        })
-                        req.on('error', (err) => {
-                            console.log('error : ', err)
-                        })
-                        req.on('end', () => {
-                            const jsonRaw = Buffer.concat(chunks).toString()
-                            const { id, status } = JSON.parse(jsonRaw)
-
-                            if (id === undefined) {
-                                const badRequest = JSON.stringify({
-                                    status: STATUS_CODES[400],
-                                    message: "id is required"
-                                })
-                                res.writeHead(400, { 'content-type': 'application/json', 'content-length': badRequest.length })
-                                res.write(badRequest)
-                                res.end()
-                                return
-                            }
-
-                            if (status === undefined) {
-                                const badRequest = JSON.stringify({
-                                    status: STATUS_CODES[400],
-                                    message: "status is required"
-                                })
-                                res.writeHead(400, { 'content-type': 'application/json', 'content-length': badRequest.length })
-                                res.write(badRequest)
-                                res.end()
-                                return
-                            }
-
-                            const index = Tasks.findIndex((task) => task.id === id)
-
-                            if (index < 0) {
-                                res.writeHead(400, { 'content-type': 'application/json', 'content-length': badRequest.length })
-                                res.write(badRequest)
-                                res.end()
-                                return
-                            }
-
-                            Tasks[index].status = status
-
-                            const newTaskJson = JSON.stringify(Tasks[index])
-                            res.writeHead(200, { 'content-type': 'application/json', 'content-length': newTaskJson.length })
-                            res.write(newTaskJson)
-                            res.end()
-                        })
-                    })()
+                    taskController.updateTask(req, res)
                     break
                 default:
                     res.writeHead(405, { 'Content-Type': 'application/json' })
