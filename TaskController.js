@@ -35,12 +35,11 @@ class TaskController {
         }
         const newTask = { id: randomUUID(), title: title, status: "todo" }
         this.#tasks.push(newTask)
-
         res.json(newTask).status(201)
     }
 
     deleteTask = (req, res) => {
-        const { id } = req.body
+        const { id } = req.params
         if (id === undefined) {
             res.json({
                 status: STATUS_CODES[400],
@@ -49,7 +48,6 @@ class TaskController {
             return
         }
         const taskIndex = this.#tasks.findIndex((task) => task.id === id)
-
         if (taskIndex < 0) {
             res.json({
                 status: STATUS_CODES[404],
@@ -57,15 +55,15 @@ class TaskController {
             }).status(404)
             return
         }
-
         const deletedTask = this.#tasks[taskIndex]
         this.#tasks.splice(taskIndex, 1)
-
         res.json(deletedTask).status(200)
     }
 
     updateTask = (req, res) => {
-        const { id, status } = req.body
+        const { id } = req.params
+        const { status } = req.body
+
         if (id === undefined) {
             res.json({
                 status: STATUS_CODES[400],
@@ -73,7 +71,6 @@ class TaskController {
             }).status(400)
             return
         }
-
         if (status === undefined) {
             res.json({
                 status: STATUS_CODES[400],
@@ -81,7 +78,6 @@ class TaskController {
             }).status(400)
             return
         }
-
         const index = this.#tasks.findIndex((task) => task.id === id)
         if (index < 0) {
             res.json({
@@ -90,9 +86,7 @@ class TaskController {
             }).status(404)
             return
         }
-
         this.#tasks[index].status = status
-
         res.json(this.#tasks[index]).status(200)
     }
 }

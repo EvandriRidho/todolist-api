@@ -1,17 +1,11 @@
 const express = require('express')
-const { TaskController } = require('./TaskController')
+const taskRouter = require('./TaskRouter')
 
 const app = express()
-const taskController = new TaskController()
+
 
 app.use(express.json())
-
-
-
-app.get('/api/v1/tasks', taskController.getTasks)
-app.post('/api/v1/tasks', taskController.createTask)
-app.delete('/api/v1/tasks', taskController.deleteTask)
-app.put('/api/v1/tasks', taskController.updateTask)
+app.use('/api/v1/tasks', taskRouter)
 
 
 const PORT = process.env.PORT || 3000
