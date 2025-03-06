@@ -63,7 +63,6 @@ class TaskController {
     updateTask = (req, res) => {
         const { id } = req.params
         const { status } = req.body
-
         if (id === undefined) {
             res.json({
                 status: STATUS_CODES[400],
