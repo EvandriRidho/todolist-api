@@ -6,6 +6,11 @@ const morgan = require('morgan')
 const logger = morgan(':method :url :status :res[content-length] :res[content-type] - :response-time ms')
 const app = express()
 
+app.use((err, req, res, next) => {
+    console.error(err)
+    res.json({ message: "Something went wrong" })
+})
+
 
 app.use(express.json())
 app.use(logger)

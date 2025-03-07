@@ -1,27 +1,15 @@
-const { randomUUID } = require('node:crypto')
 const { STATUS_CODES } = require('node:http')
+const { TaskRepository } = require('./TaskModel')
+
 
 class TaskController {
-    #tasks = [
-        {
-            id: randomUUID(),
-            title: 'Task A',
-            status: 'todo',
-        },
-        {
-            id: randomUUID(),
-            title: 'Task B',
-            status: 'todo',
-        },
-        {
-            id: randomUUID(),
-            title: 'Task C',
-            status: 'todo',
-        },
-    ]
+    #repo
+    constructor(taskRepository) {
+        this.#repo = taskRepository
+    }
 
     getTasks = (_, res) => {
-        res.json(this.#tasks).status(200)
+        res.json(this.#repo.all()).status(200)
     }
 
     createTask = (req, res) => {
@@ -33,8 +21,7 @@ class TaskController {
             }).status(400)
             return
         }
-        const newTask = { id: randomUUID(), title: title, status: "todo" }
-        this.#tasks.push(newTask)
+        const newTask = this.#repo.add(title)
         res.json(newTask).status(201)
     }
 
@@ -47,17 +34,15 @@ class TaskController {
             }).status(400)
             return
         }
-        const taskIndex = this.#tasks.findIndex((task) => task.id === id)
-        if (taskIndex < 0) {
+        const { ok, data } = this.#repo.deleteById(id)
+        if (!ok) {
             res.json({
                 status: STATUS_CODES[404],
                 message: "Task not found"
             }).status(404)
             return
         }
-        const deletedTask = this.#tasks[taskIndex]
-        this.#tasks.splice(taskIndex, 1)
-        res.json(deletedTask).status(200)
+        res.json(data).status(200)
     }
 
     updateTask = (req, res) => {
@@ -77,16 +62,15 @@ class TaskController {
             }).status(400)
             return
         }
-        const index = this.#tasks.findIndex((task) => task.id === id)
-        if (index < 0) {
+        const { ok, data } = this.#repo.updateStatus(id, status)
+        if (!ok) {
             res.json({
                 status: STATUS_CODES[404],
                 message: "Task not found"
             }).status(404)
             return
         }
-        this.#tasks[index].status = status
-        res.json(this.#tasks[index]).status(200)
+        res.json(data).status(200)
     }
 }
 

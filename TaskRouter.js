@@ -1,7 +1,9 @@
 const express = require('express')
 const { TaskController } = require('./TaskController')
+const { TaskRepository } = require('./TaskModel')
 
-const taskController = new TaskController()
+const taskRepository = new TaskRepository()
+const taskController = new TaskController(taskRepository)
 const taskRouter = express()
 
 taskRouter.get('/', taskController.getTasks)
